@@ -1,0 +1,12 @@
+{
+  "name": "fincancial-tracker-server",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1",
+    "msnodesqlv8": "^5.1.8",
+    "mssql": "^12.2.1"
+  }
+}
