@@ -1,0 +1,100 @@
+import { useState, useEffect } from 'react';
+import Header from './components/Header';
+import Summary from './components/Summary';
+import TransactionForm from './components/TransactionForm';
+import ReceiptScanner from './components/ReceiptScanner';
+import TransactionList from './components/TransactionList';
+import CategoryChart from './components/CategoryChart';
+import MonthlyReport from './components/MonthlyReport';
+import TravelBudget from './components/TravelBudget';
+import LoginScreen from './components/LoginScreen';
+import './App.css';
+
+function App() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load transactions from the database on mount
+  useEffect(() => {
+    fetch('/api/transactions')
+      .then((res) => res.json())
+      .then((data) => setTransactions(data))
+      .catch((err) => console.error('Failed to load transactions:', err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const income = transactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const expenses = transactions
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const balance = income - expenses;
+
+  const handleAdd = async (transaction) => {
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transaction),
+      });
+      if (!res.ok) throw new Error('Failed to add transaction');
+      const saved = await res.json();
+      setTransactions((prev) => [saved, ...prev]);
+    } catch (err) {
+      console.error('Add transaction error:', err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete transaction');
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error('Delete transaction error:', err);
+    }
+  };
+
+  return (
+    <div className="app">
+      {!authenticated ? (
+        <LoginScreen onLogin={() => setAuthenticated(true)} />
+      ) : (
+        <>
+          {/* Z-Pattern Row 1: Logo ←→ Date */}
+          <Header />
+
+          {/* Z-Pattern Diagonal: Summary cards spanning full width */}
+          <Summary balance={balance} income={income} expenses={expenses} />
+
+          {/* Z-Pattern Row 2: Form ←→ History */}
+          <main className="main-grid">
+            <div className="form-column">
+              <TransactionForm onAdd={handleAdd} />
+              <ReceiptScanner onAdd={handleAdd} />
+            </div>
+            <TransactionList transactions={transactions} onDelete={handleDelete} />
+          </main>
+
+          {/* Charts: Pie charts side by side */}
+          <section className="charts-grid">
+            <CategoryChart transactions={transactions} type="expense" />
+            <CategoryChart transactions={transactions} type="income" />
+          </section>
+
+          {/* Travel Budget Planner */}
+          <TravelBudget />
+
+          {/* Monthly Summary Report */}
+          <MonthlyReport transactions={transactions} />
+        </>
+      )}
+    </div>
+  );
+}
+
+export default App;
