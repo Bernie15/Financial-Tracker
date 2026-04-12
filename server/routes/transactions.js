@@ -1,24 +1,17 @@
 import { Router } from 'express';
-import { getPool, sql } from '../db.js';
+import { supabase } from '../db.js';
 
 const router = Router();
 
 // GET /api/transactions — return all transactions sorted newest first
 router.get('/', async (_req, res) => {
   try {
-    const pool = await getPool();
-    const result = await pool.request().query(
-      'SELECT Id, Description, Amount, Type, Category, Date FROM [Transaction] ORDER BY Date DESC'
-    );
-    const transactions = result.recordset.map((row) => ({
-      id: row.Id,
-      description: row.Description,
-      amount: parseFloat(row.Amount),
-      type: row.Type,
-      category: row.Category,
-      date: row.Date.toISOString(),
-    }));
-    res.json(transactions);
+    const { data, error } = await supabase
+      .from('transaction')
+      .select('id, description, amount, type, category, date')
+      .order('date', { ascending: false });
+    if (error) throw error;
+    res.json(data);
   } catch (err) {
     console.error('GET /api/transactions error:', err);
     res.status(500).json({ error: 'Failed to fetch transactions' });
@@ -40,20 +33,19 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Amount must be a positive number' });
     }
 
-    const pool = await getPool();
-    await pool
-      .request()
-      .input('Id', sql.UniqueIdentifier, id)
-      .input('Description', sql.NVarChar(60), description.trim().slice(0, 60))
-      .input('Amount', sql.Decimal(18, 2), amount)
-      .input('Type', sql.NVarChar(10), type)
-      .input('Category', sql.NVarChar(50), category)
-      .input('Date', sql.DateTime2, new Date(date))
-      .query(
-        'INSERT INTO [Transaction] (Id, Description, Amount, Type, Category, Date) VALUES (@Id, @Description, @Amount, @Type, @Category, @Date)'
-      );
+    const row = {
+      id,
+      description: description.trim().slice(0, 60),
+      amount,
+      type,
+      category,
+      date: new Date(date).toISOString(),
+    };
 
-    res.status(201).json({ id, description, amount, type, category, date });
+    const { error } = await supabase.from('transaction').insert(row);
+    if (error) throw error;
+
+    res.status(201).json(row);
   } catch (err) {
     console.error('POST /api/transactions error:', err);
     res.status(500).json({ error: 'Failed to add transaction' });
@@ -64,13 +56,13 @@ router.post('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const pool = await getPool();
-    const result = await pool
-      .request()
-      .input('Id', sql.UniqueIdentifier, id)
-      .query('DELETE FROM [Transaction] WHERE Id = @Id');
-
-    if (result.rowsAffected[0] === 0) {
+    const { data, error } = await supabase
+      .from('transaction')
+      .delete()
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    if (!data.length) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
     res.json({ success: true });

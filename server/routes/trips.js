@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getPool, sql } from '../db.js';
+import { supabase } from '../db.js';
 
 const router = Router();
 
@@ -8,37 +8,40 @@ const router = Router();
 // GET /api/trips — all trips with their expenses
 router.get('/', async (_req, res) => {
   try {
-    const pool = await getPool();
-    const trips = await pool.request().query(
-      'SELECT Id, Name, Destination, Budget, StartDate, EndDate, CreatedAt FROM TravelTrip ORDER BY CreatedAt DESC'
-    );
-    const expenses = await pool.request().query(
-      'SELECT Id, TripId, Description, Amount, Category, Date FROM TravelExpense ORDER BY Date DESC'
-    );
+    const { data: trips, error: tripErr } = await supabase
+      .from('travel_trip')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (tripErr) throw tripErr;
+
+    const { data: expenses, error: expErr } = await supabase
+      .from('travel_expense')
+      .select('*')
+      .order('date', { ascending: false });
+    if (expErr) throw expErr;
 
     const expMap = {};
-    for (const ex of expenses.recordset) {
-      const tid = ex.TripId;
-      if (!expMap[tid]) expMap[tid] = [];
-      expMap[tid].push({
-        id: ex.Id,
-        tripId: tid,
-        description: ex.Description,
-        amount: parseFloat(ex.Amount),
-        category: ex.Category,
-        date: ex.Date.toISOString(),
+    for (const ex of expenses) {
+      if (!expMap[ex.trip_id]) expMap[ex.trip_id] = [];
+      expMap[ex.trip_id].push({
+        id: ex.id,
+        tripId: ex.trip_id,
+        description: ex.description,
+        amount: parseFloat(ex.amount),
+        category: ex.category,
+        date: ex.date,
       });
     }
 
-    const result = trips.recordset.map((t) => ({
-      id: t.Id,
-      name: t.Name,
-      destination: t.Destination,
-      budget: parseFloat(t.Budget),
-      startDate: t.StartDate ? t.StartDate.toISOString().slice(0, 10) : null,
-      endDate: t.EndDate ? t.EndDate.toISOString().slice(0, 10) : null,
-      createdAt: t.CreatedAt.toISOString(),
-      expenses: expMap[t.Id] || [],
+    const result = trips.map((t) => ({
+      id: t.id,
+      name: t.name,
+      destination: t.destination,
+      budget: parseFloat(t.budget),
+      startDate: t.start_date,
+      endDate: t.end_date,
+      createdAt: t.created_at,
+      expenses: expMap[t.id] || [],
     }));
 
     res.json(result);
@@ -60,18 +63,17 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Budget must be a positive number' });
     }
 
-    const pool = await getPool();
-    await pool
-      .request()
-      .input('Id', sql.UniqueIdentifier, id)
-      .input('Name', sql.NVarChar(40), name.trim().slice(0, 40))
-      .input('Destination', sql.NVarChar(40), destination.trim().slice(0, 40))
-      .input('Budget', sql.Decimal(18, 2), budget)
-      .input('StartDate', sql.Date, startDate || null)
-      .input('EndDate', sql.Date, endDate || null)
-      .query(
-        'INSERT INTO TravelTrip (Id, Name, Destination, Budget, StartDate, EndDate) VALUES (@Id, @Name, @Destination, @Budget, @StartDate, @EndDate)'
-      );
+    const row = {
+      id,
+      name: name.trim().slice(0, 40),
+      destination: destination.trim().slice(0, 40),
+      budget,
+      start_date: startDate || null,
+      end_date: endDate || null,
+    };
+
+    const { error } = await supabase.from('travel_trip').insert(row);
+    if (error) throw error;
 
     res.status(201).json({ id, name, destination, budget, startDate: startDate || null, endDate: endDate || null, expenses: [] });
   } catch (err) {
@@ -84,13 +86,13 @@ router.post('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const pool = await getPool();
-    const result = await pool
-      .request()
-      .input('Id', sql.UniqueIdentifier, id)
-      .query('DELETE FROM TravelTrip WHERE Id = @Id');
-
-    if (result.rowsAffected[0] === 0) {
+    const { data, error } = await supabase
+      .from('travel_trip')
+      .delete()
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    if (!data.length) {
       return res.status(404).json({ error: 'Trip not found' });
     }
     res.json({ success: true });
@@ -115,18 +117,17 @@ router.post('/:tripId/expenses', async (req, res) => {
       return res.status(400).json({ error: 'Amount must be a positive number' });
     }
 
-    const pool = await getPool();
-    await pool
-      .request()
-      .input('Id', sql.UniqueIdentifier, id)
-      .input('TripId', sql.UniqueIdentifier, tripId)
-      .input('Description', sql.NVarChar(50), description.trim().slice(0, 50))
-      .input('Amount', sql.Decimal(18, 2), amount)
-      .input('Category', sql.NVarChar(30), category.slice(0, 30))
-      .input('Date', sql.DateTime2, new Date(date))
-      .query(
-        'INSERT INTO TravelExpense (Id, TripId, Description, Amount, Category, Date) VALUES (@Id, @TripId, @Description, @Amount, @Category, @Date)'
-      );
+    const row = {
+      id,
+      trip_id: tripId,
+      description: description.trim().slice(0, 50),
+      amount,
+      category: category.slice(0, 30),
+      date: new Date(date).toISOString(),
+    };
+
+    const { error } = await supabase.from('travel_expense').insert(row);
+    if (error) throw error;
 
     res.status(201).json({ id, tripId, description, amount, category, date });
   } catch (err) {
@@ -139,13 +140,13 @@ router.post('/:tripId/expenses', async (req, res) => {
 router.delete('/:tripId/expenses/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const pool = await getPool();
-    const result = await pool
-      .request()
-      .input('Id', sql.UniqueIdentifier, id)
-      .query('DELETE FROM TravelExpense WHERE Id = @Id');
-
-    if (result.rowsAffected[0] === 0) {
+    const { data, error } = await supabase
+      .from('travel_expense')
+      .delete()
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    if (!data.length) {
       return res.status(404).json({ error: 'Expense not found' });
     }
     res.json({ success: true });
