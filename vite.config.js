@@ -8,5 +8,9 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:5000',
     },
-  },base: process.env.VITE_BASE_PATH ||"/Financial-Tracker",
+  },
+  base: process.env.VITE_BASE_PATH || "/Financial-Tracker",
+  optimizeDeps: {
+    exclude: ['@vladmandic/face-api'],
+  },
 })

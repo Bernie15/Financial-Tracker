@@ -20,14 +20,39 @@ function LoginScreen({ onLogin }) {
     try {
       setStep('loading');
       setMessage('Loading facial recognition models...');
-      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-      await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+
+      // Resolve the correct model path
+      const testFile = 'tiny_face_detector_model-weights_manifest.json';
+      const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+      const candidates = [
+        `${base}models`,
+        '/models',
+        './models',
+      ];
+
+      let modelPath = candidates[0];
+      for (const candidate of candidates) {
+        try {
+          const res = await fetch(`${candidate}/${testFile}`);
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('json')) {
+            modelPath = candidate;
+            break;
+          }
+        } catch {
+          // try next candidate
+        }
+      }
+      console.log('Loading models from:', modelPath);
+
+      await faceapi.nets.tinyFaceDetector.loadFromUri(modelPath);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(modelPath);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
       setModelsLoaded(true);
       return true;
     } catch (err) {
-      setError('Failed to load facial recognition models.');
-      console.error(err);
+      setError(`Failed to load facial recognition models: ${err.message}`);
+      console.error('Model loading error:', err);
       return false;
     }
   }, []);
