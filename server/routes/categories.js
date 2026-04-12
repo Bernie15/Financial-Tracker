@@ -7,11 +7,11 @@ const router = Router();
 router.get('/', async (_req, res) => {
   try {
     const { data, error } = await supabase
-      .from('category')
-      .select('name')
-      .order('name');
+      .from('Category')
+      .select('Name')
+      .order('Name');
     if (error) throw error;
-    res.json(data.map((row) => row.name));
+    res.json(data.map((row) => row.Name));
   } catch (err) {
     console.error('GET /api/categories error:', err);
     res.status(500).json({ error: 'Failed to fetch categories' });

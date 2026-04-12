@@ -1,16 +1,10 @@
-import sql from 'mssql/msnodesqlv8.js';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const config = {
-  connectionString: `Driver={ODBC Driver 18 for SQL Server};Server=localhost\\SQLEXPRESS;Database=PersonalFinancialTracker;Trusted_Connection=Yes;Encrypt=no;`,
-};
+const supabase = createClient(
+  "https://sthxmafqzgvtukjzcgom.supabase.co",
+  "sb_publishable_95CYByFUg9K9eq1f372i5Q_bejK9ugb"
+);
 
-let pool;
-
-export async function getPool() {
-  if (!pool) {
-    pool = await new sql.ConnectionPool(config).connect();
-  }
-  return pool;
-}
-
-export { sql };
+export { supabase };

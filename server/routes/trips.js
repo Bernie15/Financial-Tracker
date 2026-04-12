@@ -9,39 +9,39 @@ const router = Router();
 router.get('/', async (_req, res) => {
   try {
     const { data: trips, error: tripErr } = await supabase
-      .from('travel_trip')
+      .from('TravelTrip')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('CreatedAt', { ascending: false });
     if (tripErr) throw tripErr;
 
     const { data: expenses, error: expErr } = await supabase
-      .from('travel_expense')
+      .from('TravelExpense')
       .select('*')
-      .order('date', { ascending: false });
+      .order('Date', { ascending: false });
     if (expErr) throw expErr;
 
     const expMap = {};
     for (const ex of expenses) {
-      if (!expMap[ex.trip_id]) expMap[ex.trip_id] = [];
-      expMap[ex.trip_id].push({
-        id: ex.id,
-        tripId: ex.trip_id,
-        description: ex.description,
-        amount: parseFloat(ex.amount),
-        category: ex.category,
-        date: ex.date,
+      if (!expMap[ex.TripId]) expMap[ex.TripId] = [];
+      expMap[ex.TripId].push({
+        id: ex.Id,
+        tripId: ex.TripId,
+        description: ex.Description,
+        amount: parseFloat(ex.Amount),
+        category: ex.Category,
+        date: ex.Date,
       });
     }
 
     const result = trips.map((t) => ({
-      id: t.id,
-      name: t.name,
-      destination: t.destination,
-      budget: parseFloat(t.budget),
-      startDate: t.start_date,
-      endDate: t.end_date,
-      createdAt: t.created_at,
-      expenses: expMap[t.id] || [],
+      id: t.Id,
+      name: t.Name,
+      destination: t.Destination,
+      budget: parseFloat(t.Budget),
+      startDate: t.StartDate,
+      endDate: t.EndDate,
+      createdAt: t.CreatedAt,
+      expenses: expMap[t.Id] || [],
     }));
 
     res.json(result);
@@ -64,15 +64,15 @@ router.post('/', async (req, res) => {
     }
 
     const row = {
-      id,
-      name: name.trim().slice(0, 40),
-      destination: destination.trim().slice(0, 40),
-      budget,
-      start_date: startDate || null,
-      end_date: endDate || null,
+      Id: id,
+      Name: name.trim().slice(0, 40),
+      Destination: destination.trim().slice(0, 40),
+      Budget: budget,
+      StartDate: startDate || null,
+      EndDate: endDate || null,
     };
 
-    const { error } = await supabase.from('travel_trip').insert(row);
+    const { error } = await supabase.from('TravelTrip').insert(row);
     if (error) throw error;
 
     res.status(201).json({ id, name, destination, budget, startDate: startDate || null, endDate: endDate || null, expenses: [] });
@@ -87,9 +87,9 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { data, error } = await supabase
-      .from('travel_trip')
+      .from('TravelTrip')
       .delete()
-      .eq('id', id)
+      .eq('Id', id)
       .select();
     if (error) throw error;
     if (!data.length) {
@@ -118,15 +118,15 @@ router.post('/:tripId/expenses', async (req, res) => {
     }
 
     const row = {
-      id,
-      trip_id: tripId,
-      description: description.trim().slice(0, 50),
-      amount,
-      category: category.slice(0, 30),
-      date: new Date(date).toISOString(),
+      Id: id,
+      TripId: tripId,
+      Description: description.trim().slice(0, 50),
+      Amount: amount,
+      Category: category.slice(0, 30),
+      Date: new Date(date).toISOString(),
     };
 
-    const { error } = await supabase.from('travel_expense').insert(row);
+    const { error } = await supabase.from('TravelExpense').insert(row);
     if (error) throw error;
 
     res.status(201).json({ id, tripId, description, amount, category, date });
@@ -141,9 +141,9 @@ router.delete('/:tripId/expenses/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { data, error } = await supabase
-      .from('travel_expense')
+      .from('TravelExpense')
       .delete()
-      .eq('id', id)
+      .eq('Id', id)
       .select();
     if (error) throw error;
     if (!data.length) {

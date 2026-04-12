@@ -7,11 +7,19 @@ const router = Router();
 router.get('/', async (_req, res) => {
   try {
     const { data, error } = await supabase
-      .from('transaction')
-      .select('id, description, amount, type, category, date')
-      .order('date', { ascending: false });
+      .from('Transaction')
+      .select('Id, Description, Amount, Type, Category, Date')
+      .order('Date', { ascending: false });
     if (error) throw error;
-    res.json(data);
+    const transactions = data.map((row) => ({
+      id: row.Id,
+      description: row.Description,
+      amount: parseFloat(row.Amount),
+      type: row.Type,
+      category: row.Category,
+      date: row.Date,
+    }));
+    res.json(transactions);
   } catch (err) {
     console.error('GET /api/transactions error:', err);
     res.status(500).json({ error: 'Failed to fetch transactions' });
@@ -34,18 +42,18 @@ router.post('/', async (req, res) => {
     }
 
     const row = {
-      id,
-      description: description.trim().slice(0, 60),
-      amount,
-      type,
-      category,
-      date: new Date(date).toISOString(),
+      Id: id,
+      Description: description.trim().slice(0, 60),
+      Amount: amount,
+      Type: type,
+      Category: category,
+      Date: new Date(date).toISOString(),
     };
 
-    const { error } = await supabase.from('transaction').insert(row);
+    const { error } = await supabase.from('Transaction').insert(row);
     if (error) throw error;
 
-    res.status(201).json(row);
+    res.status(201).json({ id, description, amount, type, category, date });
   } catch (err) {
     console.error('POST /api/transactions error:', err);
     res.status(500).json({ error: 'Failed to add transaction' });
@@ -57,9 +65,9 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { data, error } = await supabase
-      .from('transaction')
+      .from('Transaction')
       .delete()
-      .eq('id', id)
+      .eq('Id', id)
       .select();
     if (error) throw error;
     if (!data.length) {
