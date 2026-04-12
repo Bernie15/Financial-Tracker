@@ -8,6 +8,7 @@ import CategoryChart from './components/CategoryChart';
 import MonthlyReport from './components/MonthlyReport';
 import TravelBudget from './components/TravelBudget';
 import LoginScreen from './components/LoginScreen';
+import API_BASE from './api';
 import './App.css';
 
 function App() {
@@ -17,7 +18,7 @@ function App() {
 
   // Load transactions from the database on mount
   useEffect(() => {
-    fetch('/api/transactions')
+    fetch(`${API_BASE}/api/transactions`)
       .then((res) => res.json())
       .then((data) => setTransactions(data))
       .catch((err) => console.error('Failed to load transactions:', err))
@@ -36,7 +37,7 @@ function App() {
 
   const handleAdd = async (transaction) => {
     try {
-      const res = await fetch('/api/transactions', {
+      const res = await fetch(`${API_BASE}/api/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transaction),
@@ -51,7 +52,7 @@ function App() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete transaction');
       setTransactions((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../api';
 
 const FALLBACK_CATEGORIES = [
   'Education',
@@ -24,7 +25,7 @@ function TransactionForm({ onAdd }) {
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
 
   useEffect(() => {
-    fetch('/api/categories')
+    fetch(`${API_BASE}/api/categories`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {

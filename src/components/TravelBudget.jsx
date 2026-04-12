@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../api';
 
 const TRAVEL_CATEGORIES = [
   '✈️ Flights',
@@ -37,7 +38,7 @@ function TravelBudget() {
 
   // Load trips from the database on mount
   useEffect(() => {
-    fetch('/api/trips')
+    fetch(`${API_BASE}/api/trips`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setTrips(data);
@@ -98,7 +99,7 @@ function TravelBudget() {
     };
 
     try {
-      const res = await fetch('/api/trips', {
+      const res = await fetch(`${API_BASE}/api/trips`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(trip),
@@ -132,7 +133,7 @@ function TravelBudget() {
     };
 
     try {
-      const res = await fetch(`/api/trips/${activeTrip}/expenses`, {
+      const res = await fetch(`${API_BASE}/api/trips/${activeTrip}/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expense),
@@ -154,7 +155,7 @@ function TravelBudget() {
 
   const handleDeleteExpense = async (expenseId) => {
     try {
-      const res = await fetch(`/api/trips/${activeTrip}/expenses/${expenseId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/trips/${activeTrip}/expenses/${expenseId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete expense');
       setTrips((prev) =>
         prev.map((t) =>
@@ -170,7 +171,7 @@ function TravelBudget() {
 
   const handleDeleteTrip = async (tripId) => {
     try {
-      const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/trips/${tripId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete trip');
       setTrips((prev) => prev.filter((t) => t.id !== tripId));
       if (activeTrip === tripId) setActiveTrip(null);
