@@ -15,15 +15,47 @@ function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Load transactions from the database on mount
   useEffect(() => {
-    fetch(`${API_BASE}/api/transactions`)
-      .then((res) => res.json())
-      .then((data) => setTransactions(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Failed to load transactions:', err))
-      .finally(() => setLoading(false));
-  }, []);
+    let isCurrentRequest = true;
+
+    const loadTransactions = async () => {
+      setLoading(true);
+      setLoadError('');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/transactions`);
+        if (!res.ok) {
+          throw new Error(`Request failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          throw new Error('The server returned an invalid transaction list');
+        }
+
+        if (isCurrentRequest) {
+          setTransactions(data);
+        }
+      } catch (err) {
+        console.error('Failed to load transactions:', err);
+        if (isCurrentRequest) {
+          setLoadError(err.message || 'Unable to load saved transactions');
+        }
+      } finally {
+        if (isCurrentRequest) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadTransactions();
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [reloadKey]);
 
   const income = transactions
     .filter((t) => t.type === 'income')
@@ -69,6 +101,22 @@ function App() {
           {/* Z-Pattern Row 1: Logo ←→ Date */}
           <Header />
 
+          {loadError && (
+            <div className="load-error" role="alert">
+              <span>
+                Could not load saved transactions. Make sure the API server is running
+                (`npm run server`), then retry. ({loadError})
+              </span>
+              <button
+                type="button"
+                className="retry-btn"
+                onClick={() => setReloadKey((key) => key + 1)}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           {/* Z-Pattern Diagonal: Summary cards spanning full width */}
           <Summary balance={balance} income={income} expenses={expenses} />
 
@@ -78,7 +126,12 @@ function App() {
               <TransactionForm onAdd={handleAdd} />
               <ReceiptScanner onAdd={handleAdd} />
             </div>
-            <TransactionList transactions={transactions} onDelete={handleDelete} />
+            <TransactionList
+              transactions={transactions}
+              onDelete={handleDelete}
+              loading={loading}
+              loadError={loadError}
+            />
           </main>
 
           {/* Charts: Pie charts side by side */}

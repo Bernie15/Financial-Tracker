@@ -1,4 +1,4 @@
-function TransactionList({ transactions, onDelete }) {
+function TransactionList({ transactions, onDelete, loading, loadError }) {
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -14,7 +14,11 @@ function TransactionList({ transactions, onDelete }) {
   return (
     <section className="list-section">
       <h2 className="section-title">History</h2>
-      {transactions.length === 0 ? (
+      {loading ? (
+        <p className="empty-state">Loading transactions...</p>
+      ) : loadError ? (
+        <p className="empty-state">Transactions could not be loaded.</p>
+      ) : transactions.length === 0 ? (
         <p className="empty-state">No transactions yet</p>
       ) : (
         <ul className="transaction-list">

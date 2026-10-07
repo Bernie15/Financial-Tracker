@@ -11,6 +11,28 @@
   gap: 2rem;
 }
 
+.load-error {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  color: var(--expense);
+  background: var(--surface);
+  border: 1px solid var(--expense);
+  border-radius: var(--radius);
+}
+
+.retry-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 0.9rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 /* ── Z Row 1: Header ── */
 .header {
   display: flex;

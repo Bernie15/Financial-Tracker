@@ -10,6 +10,13 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (_req, res) => {
+  res.json({
+    message: 'Financial Tracker API is running.',
+    endpoints: ['/api/transactions', '/api/categories', '/api/trips'],
+  });
+});
+
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/trips', tripsRouter);
