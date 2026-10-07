@@ -2,9 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const supabase = createClient(
-  "https://sthxmafqzgvtukjzcgom.supabase.co",
-  "sb_publishable_95CYByFUg9K9eq1f372i5Q_bejK9ugb"
-);
+const { SUPABASE_URL, SUPABASE_SECRET_KEY } = process.env;
+
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+  throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY must be set in the environment');
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 
 export { supabase };

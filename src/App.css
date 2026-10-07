@@ -227,6 +227,30 @@
   padding: 3rem 0;
 }
 
+.load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--expense);
+  border-radius: 8px;
+  color: var(--expense);
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.retry-btn {
+  flex-shrink: 0;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
 .transaction-list {
   list-style: none;
   display: flex;

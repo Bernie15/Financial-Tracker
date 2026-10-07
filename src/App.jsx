@@ -15,15 +15,31 @@ function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Load transactions from the database on mount
   useEffect(() => {
     fetch(`${API_BASE}/api/transactions`)
-      .then((res) => res.json())
-      .then((data) => setTransactions(data))
-      .catch((err) => console.error('Failed to load transactions:', err))
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Request failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          throw new Error('The server returned an invalid transaction list');
+        }
+
+        setTransactions(data);
+        setLoadError('');
+      })
+      .catch((err) => {
+        console.error('Failed to load transactions:', err);
+        setLoadError(err.message || 'Unable to load saved transactions');
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [reloadKey]);
 
   const income = transactions
     .filter((t) => t.type === 'income')
@@ -69,6 +85,25 @@ function App() {
           {/* Z-Pattern Row 1: Logo ←→ Date */}
           <Header />
 
+          {loadError && (
+            <div className="load-error" role="alert">
+              <span>
+                Could not load saved transactions. Make sure the API server is running
+                (`npm run server`), then retry. ({loadError})
+              </span>
+              <button
+                type="button"
+                className="retry-btn"
+                onClick={() => {
+                  setLoading(true);
+                  setReloadKey((key) => key + 1);
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           {/* Z-Pattern Diagonal: Summary cards spanning full width */}
           <Summary balance={balance} income={income} expenses={expenses} />
 
@@ -78,7 +113,11 @@ function App() {
               <TransactionForm onAdd={handleAdd} />
               <ReceiptScanner onAdd={handleAdd} />
             </div>
-            <TransactionList transactions={transactions} onDelete={handleDelete} />
+            <TransactionList
+              transactions={transactions}
+              onDelete={handleDelete}
+              loading={loading}
+            />
           </main>
 
           {/* Charts: Pie charts side by side */}

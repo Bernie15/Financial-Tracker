@@ -10,7 +10,4 @@ export default defineConfig({
     },
   },
   base: process.env.VITE_BASE_PATH || (process.env.VERCEL ? "/" : "/Financial-Tracker"),
-  optimizeDeps: {
-    exclude: ['@vladmandic/face-api'],
-  },
 })
