@@ -4,7 +4,7 @@ dotenv.config();
 
 const supabase = createClient(
   "https://sthxmafqzgvtukjzcgom.supabase.co",
-  "sb_publishable_95CYByFUg9K9eq1f372i5Q_bejK9ugb"
+  "sb_secret_CaeF7ncwNgWR40GgjltRNg_6YZIYR5o"
 );
 
 export { supabase };

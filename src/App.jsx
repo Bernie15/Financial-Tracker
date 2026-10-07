@@ -20,7 +20,7 @@ function App() {
   useEffect(() => {
     fetch(`${API_BASE}/api/transactions`)
       .then((res) => res.json())
-      .then((data) => setTransactions(data))
+      .then((data) => setTransactions(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Failed to load transactions:', err))
       .finally(() => setLoading(false));
   }, []);
